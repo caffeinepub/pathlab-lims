@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 1 0 0;
+    --foreground: 0.145 0.025 264;
+    --card: 1 0 0;
+    --card-foreground: 0.145 0.025 264;
+    --popover: 1 0 0;
+    --popover-foreground: 0.145 0.025 264;
+    --primary: 0.546 0.22 264;
+    --primary-foreground: 0.97 0.01 264;
+    --secondary: 0.96 0.01 264;
+    --secondary-foreground: 0.21 0.04 264;
+    --muted: 0.96 0.01 264;
+    --muted-foreground: 0.55 0.02 264;
+    --accent: 0.96 0.01 264;
+    --accent-foreground: 0.21 0.04 264;
+    --destructive: 0.6 0.2 27;
+    --destructive-foreground: 0.97 0.01 264;
+    --border: 0.91 0.01 264;
+    --input: 0.91 0.01 264;
+    --ring: 0.546 0.22 264;
+    --radius: 0.5rem;
+    --chart-1: 0.65 0.2 264;
+    --chart-2: 0.65 0.18 180;
+    --chart-3: 0.65 0.18 120;
+    --chart-4: 0.65 0.18 60;
+    --chart-5: 0.65 0.18 30;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: Inter, "DM Sans", system-ui, sans-serif;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .sidebar,
+  header {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+  }
+}
