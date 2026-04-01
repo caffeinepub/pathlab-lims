@@ -18,7 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "../lib/utils";
 import { useLimsStore } from "../store/useLimsStore";
 import { Toaster } from "./ui/sonner";
@@ -37,6 +37,8 @@ const NAV_ITEMS = [
   { path: "/outsource", icon: Building2, label: "Outsource" },
   { path: "/settings", icon: Settings, label: "Settings" },
 ];
+
+const MAX_PER_GROUP = 5;
 
 type SearchResult = {
   type: "Patient" | "Booking" | "Test" | "Lab";
@@ -57,17 +59,51 @@ function normalize(value: unknown): string {
   return (value ?? "").toString().toLowerCase().trim();
 }
 
+/** Sort items by match priority: exact > startsWith > includes */
+function sortByPriority<T>(
+  items: T[],
+  q: string,
+  key: (item: T) => string,
+): T[] {
+  return items.slice().sort((a, b) => {
+    const av = key(a);
+    const bv = key(b);
+    const rankA = av === q ? 0 : av.startsWith(q) ? 1 : 2;
+    const rankB = bv === q ? 0 : bv.startsWith(q) ? 1 : 2;
+    return rankA - rankB;
+  });
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
   const routerState = useRouterState();
   const pathname = routerState.location.pathname;
   const navigate = useNavigate();
   const { patients, bookings, tests, outsourceLabs } = useLimsStore();
 
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
+  // Ctrl+K → focus search
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        setShowSearch(true);
+      }
+      if (e.key === "Escape") {
+        setShowSearch(false);
+        searchInputRef.current?.blur();
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Debounce 300ms
   useEffect(() => {
     if (searchQuery.trim().length > 1) {
       setIsSearching(true);
@@ -81,117 +117,114 @@ export function Layout({ children }: { children: React.ReactNode }) {
     setIsSearching(false);
   }, [searchQuery]);
 
-  const searchResults: SearchResult[] =
-    debouncedQuery.trim().length > 1
-      ? (() => {
-          const q = normalize(debouncedQuery);
-          const results: SearchResult[] = [];
+  // Memoised search — runs only when debouncedQuery or data changes
+  const searchResults: SearchResult[] = useCallback(() => {
+    if (debouncedQuery.trim().length <= 1) return [];
+    const q = normalize(debouncedQuery);
+    const results: SearchResult[] = [];
 
-          const matchedPatients = patients
-            .filter(
-              (p) =>
-                normalize(p.name).includes(q) ||
-                normalize(p.phone).includes(q) ||
-                normalize(p.id).includes(q),
-            )
-            .slice(0, 4)
-            .map((p) => ({
-              type: "Patient" as const,
-              id: p.id,
-              label: normalize(p.name) ? p.name : p.id,
-              sub: normalize(p.phone) ? p.phone : p.id,
-              path: "/patients",
-            }));
-          results.push(...matchedPatients);
+    // Patients
+    const sortedPatients = sortByPriority(
+      patients.filter(
+        (p) =>
+          normalize(p.name).includes(q) ||
+          normalize(p.phone).includes(q) ||
+          normalize(p.id).includes(q),
+      ),
+      q,
+      (p) => normalize(p.name),
+    ).slice(0, MAX_PER_GROUP);
+    for (const p of sortedPatients) {
+      results.push({
+        type: "Patient",
+        id: p.id,
+        label: p.name || p.id,
+        sub: p.phone || p.id,
+        path: "/patients",
+      });
+    }
 
-          const matchedBookings = bookings
-            .filter((b) => {
-              const patient = patients.find((p) => p.id === b.patientId);
-              return (
-                normalize(b.bookingId).includes(q) ||
-                normalize(patient?.name).includes(q)
-              );
-            })
-            .slice(0, 3)
-            .map((b) => {
-              const patient = patients.find((p) => p.id === b.patientId);
-              return {
-                type: "Booking" as const,
-                id: b.id,
-                label: normalize(b.bookingId) ? b.bookingId : b.id,
-                sub: normalize(patient?.name)
-                  ? patient!.name
-                  : "Unknown patient",
-                path: "/bookings",
-              };
-            });
-          results.push(...matchedBookings);
+    // Bookings
+    const sortedBookings = sortByPriority(
+      bookings.filter((b) => {
+        const patient = patients.find((p) => p.id === b.patientId);
+        return (
+          normalize(b.bookingId).includes(q) ||
+          normalize(patient?.name).includes(q)
+        );
+      }),
+      q,
+      (b) => normalize(b.bookingId),
+    ).slice(0, MAX_PER_GROUP);
+    for (const b of sortedBookings) {
+      const patient = patients.find((p) => p.id === b.patientId);
+      results.push({
+        type: "Booking",
+        id: b.id,
+        label: b.bookingId || b.id,
+        sub: patient?.name || "Unknown patient",
+        path: "/bookings",
+      });
+    }
 
-          const matchedTests = tests
-            .filter(
-              (t) =>
-                normalize(t.name).includes(q) ||
-                normalize(t.category).includes(q),
-            )
-            .slice(0, 3)
-            .map((t) => ({
-              type: "Test" as const,
-              id: t.id,
-              label: normalize(t.name) ? t.name : t.id,
-              sub: normalize(t.category) ? t.category : "Uncategorized",
-              path: "/tests",
-            }));
-          results.push(...matchedTests);
+    // Tests
+    const sortedTests = sortByPriority(
+      tests.filter(
+        (t) =>
+          normalize(t.name).includes(q) || normalize(t.category).includes(q),
+      ),
+      q,
+      (t) => normalize(t.name),
+    ).slice(0, MAX_PER_GROUP);
+    for (const t of sortedTests) {
+      results.push({
+        type: "Test",
+        id: t.id,
+        label: t.name || t.id,
+        sub: t.category || "Uncategorized",
+        path: "/tests",
+      });
+    }
 
-          const matchedLabs = outsourceLabs
-            .filter(
-              (l) =>
-                normalize(l.name).includes(q) ||
-                normalize(l.contactPerson).includes(q) ||
-                normalize(l.phone).includes(q),
-            )
-            .slice(0, 2)
-            .map((l) => ({
-              type: "Lab" as const,
-              id: l.id,
-              label: normalize(l.name) ? l.name : l.id,
-              sub:
-                [
-                  normalize(l.contactPerson) ? l.contactPerson : "",
-                  normalize(l.phone) ? l.phone : "",
-                ]
-                  .filter(Boolean)
-                  .join(" • ") || "No contact info",
-              path: "/outsource",
-            }));
-          results.push(...matchedLabs);
+    // Labs
+    const sortedLabs = sortByPriority(
+      outsourceLabs.filter(
+        (l) =>
+          normalize(l.name).includes(q) ||
+          normalize(l.contactPerson).includes(q) ||
+          normalize(l.phone).includes(q),
+      ),
+      q,
+      (l) => normalize(l.name),
+    ).slice(0, MAX_PER_GROUP);
+    for (const l of sortedLabs) {
+      results.push({
+        type: "Lab",
+        id: l.id,
+        label: l.name || l.id,
+        sub:
+          [l.contactPerson, l.phone].filter(Boolean).join(" \u2022 ") ||
+          "No contact info",
+        path: "/outsource",
+      });
+    }
 
-          return results;
-        })()
-      : [];
+    return results;
+  }, [debouncedQuery, patients, bookings, tests, outsourceLabs])();
 
-  const groups = [
-    {
-      key: "Patient" as const,
-      label: "PATIENTS",
-      results: searchResults.filter((r) => r.type === "Patient"),
-    },
-    {
-      key: "Booking" as const,
-      label: "BOOKINGS",
-      results: searchResults.filter((r) => r.type === "Booking"),
-    },
-    {
-      key: "Test" as const,
-      label: "TESTS",
-      results: searchResults.filter((r) => r.type === "Test"),
-    },
-    {
-      key: "Lab" as const,
-      label: "LABS",
-      results: searchResults.filter((r) => r.type === "Lab"),
-    },
-  ].filter((g) => g.results.length > 0);
+  const groups = (
+    [
+      { key: "Patient" as const, label: "PATIENTS" },
+      { key: "Booking" as const, label: "BOOKINGS" },
+      { key: "Test" as const, label: "TESTS" },
+      { key: "Lab" as const, label: "LABS" },
+    ] as const
+  )
+    .map((g) => ({
+      ...g,
+      results: searchResults.filter((r) => r.type === g.key),
+    }))
+    .filter((g) => g.results.length > 0);
 
   const showDropdown = showSearch && searchQuery.trim().length > 1;
 
@@ -244,7 +277,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </nav>
         <div className="px-4 py-3 border-t border-white/10">
           <div className="text-xs text-blue-400 text-center">
-            PathLab LIMS v2.0 • Offline Ready
+            PathLab LIMS v2.0 \u2022 Offline Ready
           </div>
         </div>
       </aside>
@@ -255,8 +288,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg">
               <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
               <input
+                ref={searchInputRef}
                 type="text"
-                placeholder="Search patients, bookings, tests..."
+                placeholder="Search\u2026 (Ctrl+K)"
                 className="flex-1 text-sm bg-transparent outline-none text-gray-700 placeholder-gray-400"
                 value={searchQuery}
                 onChange={(e) => {
@@ -267,7 +301,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 onBlur={() => setTimeout(() => setShowSearch(false), 200)}
                 data-ocid="layout.search_input"
               />
-              {searchQuery && (
+              {searchQuery ? (
                 <button
                   type="button"
                   onClick={() => {
@@ -277,6 +311,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 >
                   <X className="w-3.5 h-3.5 text-gray-400" />
                 </button>
+              ) : (
+                <kbd className="hidden sm:inline-flex items-center gap-0.5 text-[10px] text-gray-400 font-mono bg-gray-100 border border-gray-200 rounded px-1 py-0.5 select-none">
+                  \u2303K
+                </kbd>
               )}
             </div>
 
@@ -305,7 +343,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                             type="button"
                             onClick={() => handleResultClick(r.path)}
                             className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-left"
-                            data-ocid="layout.search_input"
+                            data-ocid="layout.search_result_item"
                           >
                             <span
                               className={cn(
