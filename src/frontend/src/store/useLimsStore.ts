@@ -28,6 +28,12 @@ import {
   apiUpdateResult,
   apiUpdateTest,
 } from "../lib/backend";
+import {
+  generateBookingId,
+  generateId,
+  generateSampleId,
+  nowISO,
+} from "../lib/limsUtils";
 import type {
   Booking,
   LabTest,
@@ -37,12 +43,6 @@ import type {
   Report,
   TestResult,
 } from "../lib/types";
-import {
-  generateBookingId,
-  generateId,
-  generateSampleId,
-  nowISO,
-} from "../lib/utils";
 
 interface LimsStore {
   patients: Patient[];

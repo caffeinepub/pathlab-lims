@@ -87,6 +87,10 @@ const resultsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/results",
   component: Results,
+  validateSearch: (search: Record<string, unknown>) => ({
+    bookingId:
+      typeof search.bookingId === "string" ? search.bookingId : undefined,
+  }),
 });
 const approvalRoute = createRoute({
   getParentRoute: () => rootRoute,

@@ -1,9 +1,12 @@
+import JSZip from "jszip";
 import {
   AlertTriangle,
   BarChart3,
   Clock,
+  Code2,
   Database,
   Download,
+  FileArchive,
   RefreshCw,
   Save,
   Settings,
@@ -19,8 +22,150 @@ import {
   DialogTitle,
 } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
+import { apiGetSettings, apiSaveSettings } from "../lib/backend";
 import { exportAllData, importData, resetAllData } from "../lib/exportImport";
 import { useLimsStore } from "../store/useLimsStore";
+
+// Raw source imports for ZIP bundling
+import appRaw from "../App.tsx?raw";
+// @ts-ignore
+import backendDtsRaw from "../backend.d.ts?raw";
+import backendRaw from "../backend.ts?raw";
+import configRaw from "../config.ts?raw";
+import indexCssRaw from "../index.css?raw";
+import mainRaw from "../main.tsx?raw";
+
+// components
+import emptyStateRaw from "../components/EmptyState.tsx?raw";
+import layoutRaw from "../components/Layout.tsx?raw";
+import smartDropdownRaw from "../components/SmartDropdown.tsx?raw";
+import statusBadgeRaw from "../components/StatusBadge.tsx?raw";
+
+// shadcn UI components
+import accordionRaw from "../components/ui/accordion.tsx?raw";
+import alertDialogRaw from "../components/ui/alert-dialog.tsx?raw";
+import alertRaw from "../components/ui/alert.tsx?raw";
+import aspectRatioRaw from "../components/ui/aspect-ratio.tsx?raw";
+import avatarRaw from "../components/ui/avatar.tsx?raw";
+import badgeRaw from "../components/ui/badge.tsx?raw";
+import breadcrumbRaw from "../components/ui/breadcrumb.tsx?raw";
+import buttonRaw from "../components/ui/button.tsx?raw";
+import calendarRaw from "../components/ui/calendar.tsx?raw";
+import cardRaw from "../components/ui/card.tsx?raw";
+import carouselRaw from "../components/ui/carousel.tsx?raw";
+import chartRaw from "../components/ui/chart.tsx?raw";
+import checkboxRaw from "../components/ui/checkbox.tsx?raw";
+import collapsibleRaw from "../components/ui/collapsible.tsx?raw";
+import commandRaw from "../components/ui/command.tsx?raw";
+import contextMenuRaw from "../components/ui/context-menu.tsx?raw";
+import dialogRaw from "../components/ui/dialog.tsx?raw";
+import drawerRaw from "../components/ui/drawer.tsx?raw";
+import dropdownMenuRaw from "../components/ui/dropdown-menu.tsx?raw";
+import formRaw from "../components/ui/form.tsx?raw";
+import hoverCardRaw from "../components/ui/hover-card.tsx?raw";
+import inputOtpRaw from "../components/ui/input-otp.tsx?raw";
+import inputRaw from "../components/ui/input.tsx?raw";
+import labelRaw from "../components/ui/label.tsx?raw";
+import menubarRaw from "../components/ui/menubar.tsx?raw";
+import navigationMenuRaw from "../components/ui/navigation-menu.tsx?raw";
+import paginationRaw from "../components/ui/pagination.tsx?raw";
+import popoverRaw from "../components/ui/popover.tsx?raw";
+import progressRaw from "../components/ui/progress.tsx?raw";
+import radioGroupRaw from "../components/ui/radio-group.tsx?raw";
+import resizableRaw from "../components/ui/resizable.tsx?raw";
+import scrollAreaRaw from "../components/ui/scroll-area.tsx?raw";
+import selectRaw from "../components/ui/select.tsx?raw";
+import separatorRaw from "../components/ui/separator.tsx?raw";
+import sheetRaw from "../components/ui/sheet.tsx?raw";
+import sidebarRaw from "../components/ui/sidebar.tsx?raw";
+import skeletonRaw from "../components/ui/skeleton.tsx?raw";
+import sliderRaw from "../components/ui/slider.tsx?raw";
+import sonnerRaw from "../components/ui/sonner.tsx?raw";
+import switchRaw from "../components/ui/switch.tsx?raw";
+import tableRaw from "../components/ui/table.tsx?raw";
+import tabsRaw from "../components/ui/tabs.tsx?raw";
+import textareaRaw from "../components/ui/textarea.tsx?raw";
+import toggleGroupRaw from "../components/ui/toggle-group.tsx?raw";
+import toggleRaw from "../components/ui/toggle.tsx?raw";
+import tooltipRaw from "../components/ui/tooltip.tsx?raw";
+
+// hooks
+import useMobileRaw from "../hooks/use-mobile.tsx?raw";
+import useActorRaw from "../hooks/useActor.ts?raw";
+import useDataRaw from "../hooks/useData.ts?raw";
+import useInternetIdentityRaw from "../hooks/useInternetIdentity.ts?raw";
+
+// lib
+import libBackendRaw from "../lib/backend.ts?raw";
+import dbRaw from "../lib/db.ts?raw";
+import exportImportRaw from "../lib/exportImport.ts?raw";
+import limsUtilsRaw from "../lib/limsUtils.ts?raw";
+import rootFilesRaw from "../lib/rootFiles.ts?raw";
+import seedDataRaw from "../lib/seedData.ts?raw";
+import libTypesRaw from "../lib/types.ts?raw";
+import utilsRaw from "../lib/utils.ts?raw";
+
+// store
+import storeRaw from "../store/useLimsStore.ts?raw";
+
+// utils
+import storageClientRaw from "../utils/StorageClient.ts?raw";
+
+// declarations
+// @ts-ignore
+import backendDidDtsRaw from "../declarations/backend.did.d.ts?raw";
+import backendDidJsRaw from "../declarations/backend.did.js?raw";
+// @ts-ignore
+import jszipDtsRaw from "../types/jszip.d.ts?raw";
+import uiSummaryRaw from "../ui-summary.json?raw";
+
+// pages
+import approvalRaw from "./Approval.tsx?raw";
+import billingRaw from "./Billing.tsx?raw";
+import bookingsRaw from "./Bookings.tsx?raw";
+import dashboardRaw from "./Dashboard.tsx?raw";
+import outsourceRaw from "./Outsource.tsx?raw";
+import patientsRaw from "./Patients.tsx?raw";
+import reportsRaw from "./Reports.tsx?raw";
+import resultsRaw from "./Results.tsx?raw";
+import samplesRaw from "./Samples.tsx?raw";
+import settingsRaw from "./Settings.tsx?raw";
+import testsRaw from "./Tests.tsx?raw";
+import worklistRaw from "./Worklist.tsx?raw";
+
+import biomeJsonRaw from "../../biome.json?raw";
+import componentsJsonRaw from "../../components.json?raw";
+import indexHtmlRaw from "../../index.html?raw";
+// frontend root config files
+import packageJsonRaw from "../../package.json?raw";
+import postcssConfigRaw from "../../postcss.config.js?raw";
+import tailwindConfigRaw from "../../tailwind.config.js?raw";
+import tsconfigRaw from "../../tsconfig.json?raw";
+import viteConfigRaw from "../../vite.config.js?raw";
+
+import canisterYamlRaw from "../../../backend/canister.yaml?raw";
+// backend files
+import mainMoRaw from "../../../backend/main.mo?raw";
+
+import {
+  backendSystemIdlRaw,
+  buildShRaw,
+  caffeineLockRaw,
+  deployShRaw,
+  dockerfileRaw,
+  envJsonRaw,
+  frontendCanisterYamlRaw,
+  icpYamlRaw,
+  licenseRaw,
+  packageLockJsonRaw,
+  pnpmLockRaw,
+  pnpmWorkspaceYamlRaw,
+  pruneUnusedImagesRaw,
+  readmeMdRaw,
+  resizeImagesRaw,
+  rootPackageJsonRaw,
+  rootTsconfigRaw,
+} from "../lib/rootFiles";
 
 function downloadJson(data: unknown, filename: string) {
   const json = JSON.stringify(data, null, 2);
@@ -29,6 +174,174 @@ function downloadJson(data: unknown, filename: string) {
   const a = document.createElement("a");
   a.href = url;
   a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function downloadSourceCode() {
+  const zip = new JSZip();
+  const root = zip.folder("pathlab-lims-source")!;
+
+  root.file("icp.yaml", icpYamlRaw);
+  root.file("pnpm-workspace.yaml", pnpmWorkspaceYamlRaw);
+  root.file("package.json", rootPackageJsonRaw);
+  root.file("README.md", readmeMdRaw);
+  root.file("Dockerfile", dockerfileRaw);
+  root.file("LICENSE", licenseRaw);
+  root.file("build.sh", buildShRaw);
+  root.file("deploy.sh", deployShRaw);
+  root.file("tsconfig.json", rootTsconfigRaw);
+  root.file("pnpm-lock.yaml", pnpmLockRaw);
+  root.file("caffeine.lock.json", caffeineLockRaw);
+
+  const scripts = root.folder("scripts")!;
+  scripts.file("prune-unused-images.js", pruneUnusedImagesRaw);
+  scripts.file("resize-images.js", resizeImagesRaw);
+
+  // Backend
+  const backend = root.folder("src/backend")!;
+  backend.file("main.mo", mainMoRaw);
+  backend.file("canister.yaml", canisterYamlRaw);
+  const systemIdl = backend.folder("system-idl")!;
+  systemIdl.file("aaaaa-aa.did", backendSystemIdlRaw);
+
+  // Frontend root config files
+  const frontend = root.folder("src/frontend")!;
+  frontend.file("index.html", indexHtmlRaw);
+  frontend.file("package.json", packageJsonRaw);
+  frontend.file("tsconfig.json", tsconfigRaw);
+  frontend.file("vite.config.js", viteConfigRaw);
+  frontend.file("tailwind.config.js", tailwindConfigRaw);
+  frontend.file("postcss.config.js", postcssConfigRaw);
+  frontend.file("components.json", componentsJsonRaw);
+  frontend.file("biome.json", biomeJsonRaw);
+  frontend.file("canister.yaml", frontendCanisterYamlRaw);
+  frontend.file("env.json", envJsonRaw);
+  frontend.file("package-lock.json", packageLockJsonRaw);
+
+  // Frontend src root files
+  const src = frontend.folder("src")!;
+  src.file("App.tsx", appRaw);
+  src.file("main.tsx", mainRaw);
+  src.file("config.ts", configRaw);
+  src.file("backend.ts", backendRaw);
+  src.file("backend.d.ts", backendDtsRaw as string);
+  src.file("index.css", indexCssRaw);
+
+  // Pages
+  const pages = src.folder("pages")!;
+  pages.file("Approval.tsx", approvalRaw);
+  pages.file("Billing.tsx", billingRaw);
+  pages.file("Bookings.tsx", bookingsRaw);
+  pages.file("Dashboard.tsx", dashboardRaw);
+  pages.file("Outsource.tsx", outsourceRaw);
+  pages.file("Patients.tsx", patientsRaw);
+  pages.file("Reports.tsx", reportsRaw);
+  pages.file("Results.tsx", resultsRaw);
+  pages.file("Samples.tsx", samplesRaw);
+  pages.file("Settings.tsx", settingsRaw);
+  pages.file("Tests.tsx", testsRaw);
+  pages.file("Worklist.tsx", worklistRaw);
+
+  // Components
+  const components = src.folder("components")!;
+  components.file("EmptyState.tsx", emptyStateRaw);
+  components.file("Layout.tsx", layoutRaw);
+  components.file("SmartDropdown.tsx", smartDropdownRaw);
+  components.file("StatusBadge.tsx", statusBadgeRaw);
+
+  // shadcn UI components
+  const ui = components.folder("ui")!;
+  ui.file("accordion.tsx", accordionRaw);
+  ui.file("alert-dialog.tsx", alertDialogRaw);
+  ui.file("alert.tsx", alertRaw);
+  ui.file("aspect-ratio.tsx", aspectRatioRaw);
+  ui.file("avatar.tsx", avatarRaw);
+  ui.file("badge.tsx", badgeRaw);
+  ui.file("breadcrumb.tsx", breadcrumbRaw);
+  ui.file("button.tsx", buttonRaw);
+  ui.file("calendar.tsx", calendarRaw);
+  ui.file("card.tsx", cardRaw);
+  ui.file("carousel.tsx", carouselRaw);
+  ui.file("chart.tsx", chartRaw);
+  ui.file("checkbox.tsx", checkboxRaw);
+  ui.file("collapsible.tsx", collapsibleRaw);
+  ui.file("command.tsx", commandRaw);
+  ui.file("context-menu.tsx", contextMenuRaw);
+  ui.file("dialog.tsx", dialogRaw);
+  ui.file("drawer.tsx", drawerRaw);
+  ui.file("dropdown-menu.tsx", dropdownMenuRaw);
+  ui.file("form.tsx", formRaw);
+  ui.file("hover-card.tsx", hoverCardRaw);
+  ui.file("input-otp.tsx", inputOtpRaw);
+  ui.file("input.tsx", inputRaw);
+  ui.file("label.tsx", labelRaw);
+  ui.file("menubar.tsx", menubarRaw);
+  ui.file("navigation-menu.tsx", navigationMenuRaw);
+  ui.file("pagination.tsx", paginationRaw);
+  ui.file("popover.tsx", popoverRaw);
+  ui.file("progress.tsx", progressRaw);
+  ui.file("radio-group.tsx", radioGroupRaw);
+  ui.file("resizable.tsx", resizableRaw);
+  ui.file("scroll-area.tsx", scrollAreaRaw);
+  ui.file("select.tsx", selectRaw);
+  ui.file("separator.tsx", separatorRaw);
+  ui.file("sheet.tsx", sheetRaw);
+  ui.file("sidebar.tsx", sidebarRaw);
+  ui.file("skeleton.tsx", skeletonRaw);
+  ui.file("slider.tsx", sliderRaw);
+  ui.file("sonner.tsx", sonnerRaw);
+  ui.file("switch.tsx", switchRaw);
+  ui.file("table.tsx", tableRaw);
+  ui.file("tabs.tsx", tabsRaw);
+  ui.file("textarea.tsx", textareaRaw);
+  ui.file("toggle-group.tsx", toggleGroupRaw);
+  ui.file("toggle.tsx", toggleRaw);
+  ui.file("tooltip.tsx", tooltipRaw);
+
+  // Hooks
+  const hooks = src.folder("hooks")!;
+  hooks.file("use-mobile.tsx", useMobileRaw);
+  hooks.file("useActor.ts", useActorRaw);
+  hooks.file("useData.ts", useDataRaw);
+  hooks.file("useInternetIdentity.ts", useInternetIdentityRaw);
+
+  // Lib
+  const lib = src.folder("lib")!;
+  lib.file("backend.ts", libBackendRaw);
+  lib.file("db.ts", dbRaw);
+  lib.file("exportImport.ts", exportImportRaw);
+  lib.file("seedData.ts", seedDataRaw);
+  lib.file("types.ts", libTypesRaw);
+  lib.file("utils.ts", utilsRaw);
+  lib.file("limsUtils.ts", limsUtilsRaw);
+  lib.file("rootFiles.ts", rootFilesRaw);
+
+  // Store
+  const store = src.folder("store")!;
+  store.file("useLimsStore.ts", storeRaw);
+
+  // Utils
+  const utils = src.folder("utils")!;
+  utils.file("StorageClient.ts", storageClientRaw);
+
+  // Declarations
+  const declarations = src.folder("declarations")!;
+  declarations.file("backend.did.d.ts", backendDidDtsRaw as string);
+  declarations.file("backend.did.js", backendDidJsRaw);
+
+  // Types
+  const types = src.folder("types")!;
+  types.file("jszip.d.ts", jszipDtsRaw as string);
+
+  // ui-summary
+  src.file("ui-summary.json", uiSummaryRaw);
+
+  const blob = await zip.generateAsync({ type: "blob" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "pathlab-lims-source.zip";
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -45,18 +358,10 @@ export default function SettingsPage() {
     outsourceLabs,
   } = store;
 
-  const [labName, setLabName] = useState(
-    localStorage.getItem("lab_name") || "PathLab Diagnostics",
-  );
-  const [labAddress, setLabAddress] = useState(
-    localStorage.getItem("lab_address") || "",
-  );
-  const [labPhone, setLabPhone] = useState(
-    localStorage.getItem("lab_phone") || "",
-  );
-  const [labEmail, setLabEmail] = useState(
-    localStorage.getItem("lab_email") || "",
-  );
+  const [labName, setLabName] = useState("");
+  const [labAddress, setLabAddress] = useState("");
+  const [labPhone, setLabPhone] = useState("");
+  const [labEmail, setLabEmail] = useState("");
   const [resetConfirm, setResetConfirm] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importMode, setImportMode] = useState<"replace" | "merge">("merge");
@@ -66,7 +371,26 @@ export default function SettingsPage() {
   const [lastBackupTime, setLastBackupTime] = useState<string | null>(
     localStorage.getItem("lims_last_backup_time"),
   );
+  const [downloading, setDownloading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Load lab info from backend on mount
+  useEffect(() => {
+    apiGetSettings()
+      .then((s) => {
+        if (s) {
+          setLabName(s.labName || "PathLab Diagnostics");
+          setLabAddress(s.labAddress || "");
+          setLabPhone(s.labPhone || "");
+          setLabEmail(s.labEmail || "");
+        } else {
+          setLabName("PathLab Diagnostics");
+        }
+      })
+      .catch(() => {
+        setLabName("PathLab Diagnostics");
+      });
+  }, []);
 
   const allData = {
     patients,
@@ -120,12 +444,21 @@ export default function SettingsPage() {
     autoBackup,
   ]);
 
-  function saveLabInfo() {
-    localStorage.setItem("lab_name", labName);
-    localStorage.setItem("lab_address", labAddress);
-    localStorage.setItem("lab_phone", labPhone);
-    localStorage.setItem("lab_email", labEmail);
-    toast.success("Lab information saved");
+  async function saveLabInfo() {
+    try {
+      await apiSaveSettings({
+        labName,
+        labAddress,
+        labPhone,
+        labEmail,
+        currency: "INR",
+        reportHeader: "",
+        reportFooter: "",
+      });
+      toast.success("Lab information saved");
+    } catch {
+      toast.error("Failed to save lab information");
+    }
   }
 
   async function handleExport() {
@@ -207,6 +540,17 @@ export default function SettingsPage() {
     }
   }
 
+  async function handleDownloadSourceCode() {
+    setDownloading(true);
+    try {
+      await downloadSourceCode();
+    } catch {
+      toast.error("Download failed — please try again");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
@@ -269,6 +613,7 @@ export default function SettingsPage() {
         <Button
           onClick={saveLabInfo}
           className="mt-4 bg-blue-600 hover:bg-blue-700"
+          data-ocid="settings.save_button"
         >
           <Save className="w-4 h-4 mr-1" /> Save Lab Info
         </Button>
@@ -289,6 +634,7 @@ export default function SettingsPage() {
               onClick={handleExport}
               variant="outline"
               className="flex items-center gap-2"
+              data-ocid="settings.export_all_button"
             >
               <Download className="w-4 h-4" /> Export Full Backup (JSON)
             </Button>
@@ -517,7 +863,7 @@ export default function SettingsPage() {
             Reset All Data
           </div>
           <p className="text-xs text-red-600 mb-3">
-            Clears ALL data from IndexedDB permanently. This cannot be undone.
+            Clears ALL data from the backend permanently. This cannot be undone.
           </p>
           <Button
             onClick={() => setResetConfirm(true)}
@@ -530,7 +876,52 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* 7. About */}
+      {/* 7. Download Source Code */}
+      <div className="bg-white rounded-xl border border-violet-200 p-6 shadow-sm">
+        <div className="flex items-center gap-2 mb-1">
+          <Code2 className="w-4 h-4 text-violet-600" />
+          <h2 className="font-semibold text-gray-800">Download Source Code</h2>
+          <span className="ml-auto text-xs bg-violet-100 text-violet-700 font-medium px-2 py-0.5 rounded-full">
+            ZIP
+          </span>
+        </div>
+
+        <div className="bg-violet-50 border border-violet-100 rounded-lg p-4 mb-4 mt-3">
+          <p className="text-xs font-semibold text-violet-700 mb-2 uppercase tracking-wide">
+            What's included in the ZIP
+          </p>
+          <ul className="space-y-1 text-sm text-gray-600">
+            <li className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-violet-400 rounded-full flex-shrink-0" />
+              Backend — Motoko canister source (stable memory, all CRUD APIs)
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-violet-400 rounded-full flex-shrink-0" />
+              Frontend — React + TypeScript + Tailwind + ShadCN UI source
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-violet-400 rounded-full flex-shrink-0" />
+              All 13 modules: Dashboard, Patients, Tests, Bookings, Reports…
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-violet-400 rounded-full flex-shrink-0" />
+              All shadcn/ui components, hooks, config files, and declarations
+            </li>
+          </ul>
+        </div>
+
+        <Button
+          className="bg-violet-600 hover:bg-violet-700 text-white flex items-center gap-2"
+          onClick={handleDownloadSourceCode}
+          disabled={downloading}
+          data-ocid="settings.download_source_button"
+        >
+          <FileArchive className="w-4 h-4" />
+          {downloading ? "Preparing ZIP..." : "Download Project Source Code"}
+        </Button>
+      </div>
+
+      {/* 8. About */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
         <h2 className="font-semibold text-gray-800 mb-3">About</h2>
         <div className="space-y-1 text-sm text-gray-600">
@@ -540,15 +931,15 @@ export default function SettingsPage() {
           </div>
           <div className="flex justify-between">
             <span>Storage</span>
-            <span className="font-medium">IndexedDB (Local)</span>
+            <span className="font-medium">ICP Canister (Motoko)</span>
           </div>
           <div className="flex justify-between">
             <span>Mode</span>
-            <span className="font-medium text-green-600">Offline Ready</span>
+            <span className="font-medium text-green-600">Production Ready</span>
           </div>
           <div className="flex justify-between">
-            <span>Database</span>
-            <span className="font-medium">LIMS_LOCAL_DB</span>
+            <span>Backend</span>
+            <span className="font-medium">Internet Computer</span>
           </div>
         </div>
       </div>

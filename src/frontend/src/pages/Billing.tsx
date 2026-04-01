@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
-import { formatCurrency, formatDate } from "../lib/utils";
+import { formatCurrency, formatDate } from "../lib/limsUtils";
 import { useLimsStore } from "../store/useLimsStore";
 
 const METHODS = ["Cash", "Card", "UPI", "Insurance", "Online"];

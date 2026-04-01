@@ -16,6 +16,7 @@ export interface TestParameter {
   referenceRange: string;
   referenceMin?: number;
   referenceMax?: number;
+  qualitativeValues?: string[];
 }
 
 export interface LabTest {

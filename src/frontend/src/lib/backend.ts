@@ -18,7 +18,7 @@ import type {
   Report,
   TestResult,
 } from "./types";
-import { isoToNanos, nanosToISO } from "./utils";
+import { isoToNanos, nanosToISO } from "./limsUtils";
 
 // ─── Conversion helpers ────────────────────────────────────────────────────
 

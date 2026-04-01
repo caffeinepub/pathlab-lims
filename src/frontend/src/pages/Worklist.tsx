@@ -4,7 +4,7 @@ import { useState } from "react";
 import { EmptyState } from "../components/EmptyState";
 import { StatusBadge } from "../components/StatusBadge";
 import { Button } from "../components/ui/button";
-import { formatDate } from "../lib/utils";
+import { formatDate } from "../lib/limsUtils";
 import { useLimsStore } from "../store/useLimsStore";
 
 const FILTERS = [
@@ -112,12 +112,31 @@ export default function Worklist() {
                     </td>
                     <td className="px-4 py-3">
                       {b.status === "collected" && (
-                        <Link to="/results">
+                        <Link
+                          to="/results"
+                          search={{ bookingId: b.id }}
+                          data-ocid="worklist.results.link"
+                        >
                           <Button
                             size="sm"
                             className="bg-purple-600 hover:bg-purple-700 text-xs h-7"
                           >
                             Enter Results
+                          </Button>
+                        </Link>
+                      )}
+                      {b.status === "processing" && (
+                        <Link
+                          to="/results"
+                          search={{ bookingId: b.id }}
+                          data-ocid="worklist.results.link"
+                        >
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs h-7 border-purple-300 text-purple-700 hover:bg-purple-50"
+                          >
+                            Edit Results
                           </Button>
                         </Link>
                       )}

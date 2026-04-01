@@ -1,16 +1,29 @@
 import { CheckCircle, TestTube } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { EmptyState } from "../components/EmptyState";
 import { StatusBadge } from "../components/StatusBadge";
 import { Button } from "../components/ui/button";
-import { formatDate, formatDateTime, generateSampleId } from "../lib/utils";
+import { formatDate, formatDateTime, generateSampleId } from "../lib/limsUtils";
 import { useLimsStore } from "../store/useLimsStore";
+
+type FilterStatus =
+  | "all"
+  | "pending"
+  | "collected"
+  | "processing"
+  | "completed";
 
 export default function Samples() {
   const { patients, tests, bookings, updateBooking } = useLimsStore();
+  const [filter, setFilter] = useState<FilterStatus>("all");
+
   const sorted = [...bookings].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
+
+  const filtered =
+    filter === "all" ? sorted : sorted.filter((b) => b.status === filter);
 
   async function markCollected(id: string) {
     const sampleId = generateSampleId();
@@ -22,6 +35,14 @@ export default function Samples() {
     toast.success(`Sample collected — ID: ${sampleId}`);
   }
 
+  const filters: { label: string; value: FilterStatus }[] = [
+    { label: "All", value: "all" },
+    { label: "Pending", value: "pending" },
+    { label: "Collected", value: "collected" },
+    { label: "Processing", value: "processing" },
+    { label: "Completed", value: "completed" },
+  ];
+
   return (
     <div className="space-y-5">
       <div>
@@ -32,6 +53,25 @@ export default function Samples() {
         </p>
       </div>
 
+      {/* Filter buttons */}
+      <div className="flex gap-2 flex-wrap">
+        {filters.map((f) => (
+          <button
+            key={f.value}
+            type="button"
+            onClick={() => setFilter(f.value)}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              filter === f.value
+                ? "bg-blue-600 text-white"
+                : "bg-white border border-gray-200 text-gray-600 hover:border-blue-300"
+            }`}
+            data-ocid="samples.tab"
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         {sorted.length === 0 ? (
           <EmptyState
@@ -39,6 +79,10 @@ export default function Samples() {
             title="No bookings yet"
             description="Create a booking first"
           />
+        ) : filtered.length === 0 ? (
+          <div className="py-12 text-center text-sm text-gray-400">
+            No bookings with status "{filter}"
+          </div>
         ) : (
           <table className="w-full">
             <thead>
@@ -62,7 +106,7 @@ export default function Samples() {
               </tr>
             </thead>
             <tbody>
-              {sorted.map((b) => {
+              {filtered.map((b) => {
                 const patient = patients.find((p) => p.id === b.patientId);
                 return (
                   <tr
@@ -96,6 +140,7 @@ export default function Samples() {
                           size="sm"
                           onClick={() => markCollected(b.id)}
                           className="bg-blue-600 hover:bg-blue-700 text-xs h-7"
+                          data-ocid="samples.primary_button"
                         >
                           <CheckCircle className="w-3.5 h-3.5 mr-1" />
                           Mark Collected

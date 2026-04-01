@@ -19,7 +19,12 @@ import {
   YAxis,
 } from "recharts";
 import { StatusBadge } from "../components/StatusBadge";
-import { formatCurrency, formatDate, isThisMonth, isToday } from "../lib/utils";
+import {
+  formatCurrency,
+  formatDate,
+  isThisMonth,
+  isToday,
+} from "../lib/limsUtils";
 import { useLimsStore } from "../store/useLimsStore";
 
 const COLORS = [
@@ -83,7 +88,7 @@ export default function Dashboard() {
         </p>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard
           icon={Users}
           color="blue"
@@ -120,7 +125,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-700 mb-4">
             Bookings — Last 7 Days
